@@ -1,4 +1,5 @@
 import requests
+from src import utils
 
 class RequestNHL():
     nb_games = {30: 1230, 31:1271, 32:1353}
@@ -33,7 +34,8 @@ class RequestNHL():
             season (int): The first year of the season to retrieve, i.e. for the 2016-17
                 season you'd put in 2016
         """
-        season_fullname = season + str(int(season)+1)
+        # season_fullname = season + str(int(season)+1)
+        season_fullname = utils.season_full_name(season)
         teams = requests.get(self.teams_url, params={"season": season_fullname})
         teams = teams.json()
         return self.nb_games[len(teams["teams"])]
