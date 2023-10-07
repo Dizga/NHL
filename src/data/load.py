@@ -3,6 +3,7 @@ import pickle
 import sys
 from src.data import RequestNHL
 from src import utils
+from src.models import Season
 
 def playoff_code(id: int) -> int:
   """
@@ -30,10 +31,25 @@ def playoff_code(id: int) -> int:
 
 # Load or download all the regular and playoff games from the specified season
 def load_data(season:int, filename: str = "", samples: bool = False) -> object:
+  """
+  Load season data from file. If the file does not exists, the data is download and saved.
+  Data includes regular and playoff games.
+
+  Args:
+      season (int): The first year of the season to retrieve, i.e. for the 2016-17
+                season you'd put in 2016
+      filename (Optional[str]): Path + filename of the file to load or save data into.
+
+      samples (bool): if true, only a small portion of the data is downloaded, default false.
+  """
 
   season_fullname = utils.season_full_name(season)
 
-  season_file = filename or f'data/{season_fullname}.pkl'
+  default_filename = f'data/{season_fullname}.pkl'
+  if samples:
+    default_filename = f'data/{season_fullname}-samples.pkl'
+
+  season_file = filename or default_filename
 
   if os.path.isfile(season_file):
     with open(season_file, 'rb') as file:
@@ -46,6 +62,7 @@ def load_data(season:int, filename: str = "", samples: bool = False) -> object:
     data = {}
 
     nb_regular_games = RequestNHL.nb_regular_games(season)
+    nb_playoffs = 105
     if samples:
       nb_regular_games = 20
       nb_playoffs = 5
@@ -60,8 +77,7 @@ def load_data(season:int, filename: str = "", samples: bool = False) -> object:
 
     for id in range(1, nb_playoffs + 1):
       code = playoff_code(id)
-      game_id = f"0{code}"
-      game = game = RequestNHL.get_game(season, id, regular=False)
+      game = RequestNHL.get_game(season, code, regular=False)
 
       # Some not played game have no data (except a message)
       if 'message' in game:
@@ -80,3 +96,19 @@ def load_data(season:int, filename: str = "", samples: bool = False) -> object:
       print(f'Season {season} successfully saved to file')
 
   return data
+
+def load_processed_data(season:int, filename: str = "", samples: bool = False) -> Season :
+  """
+  Load season data and parse the data into the Season model.
+
+  Args:
+      season (int): The first year of the season to retrieve, i.e. for the 2016-17
+                season you'd put in 2016
+      filename (Optional[str]): Path + filename of the file to load or save data into.
+
+      samples (bool): if true, only a small portion of the data is downloaded, default false.
+  """
+  print('Processing data... (1-2 minutes)')
+  season = Season.model_validate(load_data(season, filename, samples))
+  print('Done!')
+  return season

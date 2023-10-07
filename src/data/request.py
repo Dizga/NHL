@@ -3,7 +3,6 @@ from src import utils
 
 class RequestNHL():
     nb_games = {30: 1230, 31:1271, 32:1353}
-    nb_playoffs = 105
     base_url = "https://statsapi.web.nhl.com/api/v1/"
     teams_url = base_url + 'teams'
 
