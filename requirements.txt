@@ -4,9 +4,7 @@ pydantic
 matplotlib
 seaborn
 requests
-opencv-python
 tqdm
-lxml
 plotly
 ipywidgets
 ipykernel
