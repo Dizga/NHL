@@ -64,7 +64,7 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
     p_games = {}
     data = {}
 
-    nb_regular_games = RequestNHL.nb_regular_games(season)
+    nb_regular_games = RequestNHL.nb_regular_games(year)
     nb_playoffs = 105
     if samples:
       nb_regular_games = 20
