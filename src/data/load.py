@@ -116,16 +116,16 @@ def load_processed_data(year:int, filename: str = "", samples: bool = False) -> 
   return season
 
 
-def load_df_shots(year:int, filename: str = "", season: Season = None):
+def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.DataFrame:
   """
-  Load season data and parse the data into the Season model.
+  Load season data and transform to a DataFrame with shots and goals events.
 
   Args:
       year (int): The first year of the season to retrieve, i.e. for the 2016-17
                 season you'd put in 2016
       filename (Optional[str]): Path + filename of the file to load or save data into.
 
-      season (Optional[Season]): 
+      season (Season): (Optional) Season to convert to DataFrame
   """
 
   season_fullname = utils.season_full_name(year)
