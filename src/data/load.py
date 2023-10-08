@@ -2,6 +2,7 @@ import math
 import os
 import pickle
 import sys
+import numpy as np
 
 import pandas as pd
 from src.data import RequestNHL
@@ -128,8 +129,9 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
       season (Season): (Optional) Season to convert to DataFrame
   """
 
-  season_fullname = utils.season_full_name(year)
-  filename = filename or f'data/shots_{season_fullname}.pkl'
+  version = 0.1
+
+  filename = filename or f'data/shots_{year}-{version}.pkl'
 
   if not season:
     if os.path.isfile(filename):
@@ -143,13 +145,11 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
            'Goal',
            'X',
            'Y',
-           'X-opp',
            'Tireur',
            'Gardien',
            'Type',
            'Filet Vide',
-           'Force',
-           'Net distance']
+           'Force']
   
   data = []
 
@@ -176,14 +176,26 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
         but = play.result.event == 'Goal'
         x = play.coordinates.x
         y = play.coordinates.y
-        x_opp = -89 if play.get_opp_side() == Side.Left else 89
         shot_type = play.result.secondaryType
         empty_net = play.result.emptyNet
         strength = play.result.strength
-        net_distance = math.dist([x, y],[x_opp, 0])
-        data.append([id, periode, time, equipe, but, x, y, x_opp, tireur, gardien, shot_type, empty_net, strength, net_distance])
+        data.append([id, periode, time, equipe, but, x, y, tireur, gardien, shot_type, empty_net, strength])
         
   df = pd.DataFrame(data, columns=columns)
+
+  # Get the opponant net position
+  df['Avg'] = df.groupby(['Game Id', 'Periode', 'Equipe'])['X'].transform('mean')
+  def opp_net_postition(row):
+      x = row.X
+      y = row.Y
+      if row.Avg > 0:
+          return math.dist([x, y],[89, 0])
+      else:
+          return math.dist([x, y],[-89, 0])
+
+  df['Net distance'] = df.apply(opp_net_postition, axis=1)
+  df.drop('Avg', axis=1, inplace = True)
+
   df = df.infer_objects()
 
   df.to_pickle(filename)
