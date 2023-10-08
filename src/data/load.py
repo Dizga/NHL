@@ -2,12 +2,11 @@ import math
 import os
 import pickle
 import sys
-import numpy as np
-
 import pandas as pd
+
 from src.data import RequestNHL
 from src import utils
-from src.models import Season, Side
+from src.models import Season
 
 def playoff_code(id: int) -> int:
   """
