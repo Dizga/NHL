@@ -33,8 +33,8 @@ class PlayerEvent(BaseModel):
   playerType: str
 
 class Coordinates(BaseModel):
-  x: Optional[float] = None
-  y: Optional[float] = None
+  x: float = None
+  y: float = None
 
 class PlayDetails(BaseModel):
   eventIdx: int
@@ -75,12 +75,18 @@ class PlayResult(BaseModel):
 
 
 class Play(BaseModel):
-  coordinates: Coordinates
+  coordinates: Optional[Coordinates]
   about: PlayDetails
   result: PlayResult
   team: Optional[Team] = None
   players: Optional[list[PlayerEvent]] = []
   parent: "Game" = None
+
+  @field_validator('coordinates', mode='before')
+  def coordinates(cls, value):
+      if not value:
+         return None
+      return value
 
   def get_opp_side(self):
 
@@ -128,8 +134,8 @@ class Game(BaseModel):
       df = pd.DataFrame(columns=columns)
       for play in self.plays:
         idx = play.about.eventIdx
-        x = play.coordinates.x
-        y = play.coordinates.y
+        x = play.coordinates.x if play.coordinates else None
+        y = play.coordinates.y if play.coordinates else None
         description = play.result.description
         df = pd.concat([df, pd.DataFrame([[idx, x, y, description]], columns=columns)])
       return df.reset_index(drop=True)
