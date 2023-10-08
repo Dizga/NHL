@@ -1,6 +1,7 @@
 from datetime import datetime, time
 from enum import Enum
 from typing import Dict, Optional
+import warnings
 import pandas as pd
 
 from pydantic import BaseModel, field_validator, model_validator
@@ -89,7 +90,7 @@ class Play(BaseModel):
       return value
 
   def get_opp_side(self):
-
+    warnings.warn("Sides and position do not necessarily match! Left can mean x<0 or x>0")
     starting_side = self.parent.starting_side
     if starting_side is None:
       return None
