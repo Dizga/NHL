@@ -3,3 +3,4 @@
 *.pkl
 venv/
 .vscode/
+activate
