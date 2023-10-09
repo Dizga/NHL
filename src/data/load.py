@@ -115,7 +115,6 @@ def load_processed_data(year:int, filename: str = "", samples: bool = False) -> 
   print('Done!')
   return season
 
-
 def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.DataFrame:
   """
   Load season data and transform to a DataFrame with shots and goals events.
@@ -137,18 +136,18 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
       return pd.read_pickle(filename)
     season = load_processed_data(year)
 
-  columns = ['Game Id',
-           'Periode',
-           'Temps écoulé',
-           'Equipe',
+  columns = ['Game_id',
+           'Period',
+           'Time',
+           'Team',
            'Goal',
            'X',
            'Y',
-           'Tireur',
-           'Gardien',
+           'Shooter',
+           'Goalie',
            'Type',
-           'Filet Vide',
-           'Force']
+           'Empty_net',
+           'Strength']
   
   data = []
 
@@ -156,9 +155,7 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
   
   for game_id, game in enumerate(season.regulars):
     for play in game.plays:
-      if ( game.starting_side and
-           play.coordinates   and
-          (play.result.event == 'Goal' or play.result.event == 'Shot')):
+      if play.coordinates and (play.result.event == 'Goal' or play.result.event == 'Shot'):
 
         tireur = ""
         gardien = ""
@@ -183,16 +180,14 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
   df = pd.DataFrame(data, columns=columns)
 
   # Get the opponant net position
-  df['Avg'] = df.groupby(['Game Id', 'Periode', 'Equipe'])['X'].transform('mean')
-  def opp_net_postition(row):
+  df['Avg'] = df.groupby(['Game_id', 'Period', 'Team'])['X'].transform('mean')
+  def distance_x_from_net(row):
       x = row.X
-      y = row.Y
-      if row.Avg > 0:
-          return math.dist([x, y],[89, 0])
-      else:
-          return math.dist([x, y],[-89, 0])
+      x_net = 89 if row.Avg > 0 else -89
+      return abs(x_net-x)
 
-  df['Net distance'] = df.apply(opp_net_postition, axis=1)
+  df['X_dist'] = df.apply(distance_x_from_net, axis=1)
+  df['Net_distance'] = df.apply(lambda row: math.dist([row.X_dist, row.Y],[0, 0]), axis=1)
   df.drop('Avg', axis=1, inplace = True)
 
   df = df.infer_objects()
