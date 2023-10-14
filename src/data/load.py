@@ -44,6 +44,17 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
 
       samples (bool): if true, only a small portion of the data is downloaded, default false.
   """
+  # Définir le chemin
+  dir_data = 'data'
+
+  # Créer le dossier data
+  try:
+    if not os.path.isdir(dir_data):
+      os.mkdir(dir_data)
+      print("Le dossier '% s' a été créé" % dir_data) 
+  except FileExistsError as e:
+      print("Erreur dans le temps créer de dessier '% s' avec : "+e % dir_data) 
+      
 
   season_fullname = utils.season_full_name(year)
 
