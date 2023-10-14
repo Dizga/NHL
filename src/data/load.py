@@ -46,7 +46,7 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
   """
     # Définier de chemain
   dir_data = 'data'
-  
+
   # Créer de dossier DATA 
   try:
     if not os.path.isdir(dir_data):
@@ -54,6 +54,7 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
       print("Le dessier '% s' a crée" % dir_data) 
   except FileExistsError as e:
       print("Erreur dans le temps créer de dessier '% s' avec : "+e % dir_data) 
+      
 
   season_fullname = utils.season_full_name(year)
 
