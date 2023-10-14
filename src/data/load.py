@@ -129,7 +129,17 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
   """
 
   version = 0.1
-
+  
+  # Définier de chemain
+  dir_data = 'data'
+  # Créer de dossier DATA 
+  try:
+    if not os.path.isdir(dir_data):
+      os.mkdir(dir_data)
+      print("Le dessier '% s' a crée" % dir_data) 
+  except FileExistsError as e:
+      print("Erreur dans le temps créer de dessier '% s' avec : "+e % dir_data) 
+  
   filename = filename or f'data/shots_{year}-{version}.pkl'
 
   if not season:
