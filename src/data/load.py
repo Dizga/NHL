@@ -44,7 +44,7 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
 
       samples (bool): if true, only a small portion of the data is downloaded, default false.
   """
-  # Définier de chemain
+  # Définir le chemin
   dir_data = 'data'
 
   # Créer le dossier data
@@ -140,7 +140,7 @@ def load_df_shots(year:int, filename: str = "", season: Season = None) -> pd.Dat
   """
 
   version = 0.1
-  
+
   filename = filename or f'data/shots_{year}-{version}.pkl'
 
   if not season:
