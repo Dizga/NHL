@@ -19,6 +19,7 @@ class RequestNHL():
         season = str(season)
         game_id = f"{id:04d}"
         url = self.base_url + 'game/' + season
+        # if regular game we add to the url 02 and if it is playoff we add 03
         url += '02' if regular else '03'
         url += game_id
         url += '/feed/live'
