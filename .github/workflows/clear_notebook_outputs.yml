@@ -1,0 +1,36 @@
+name: Clear Jupyter Notebook Outputs
+
+on:
+  push:
+    paths:
+      - '**.ipynb'
+
+jobs:
+  clear-outputs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nbconvert
+
+    - name: Clear notebook outputs
+      run: |
+        jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "Clear notebook outputs" || echo "No changes to commit"
+        git push
