@@ -31,7 +31,7 @@ def playoff_code(id: int) -> int:
       game = int(rest % 7) + 1
       round = i + 1
       return int(f"{round}{matchup}{game}")
-
+    
 def load_data(year:int, filename: str = "", samples: bool = False) -> object:
   """
   Load season data from file. If the file does not exists, the data is download and saved.
@@ -54,7 +54,7 @@ def load_data(year:int, filename: str = "", samples: bool = False) -> object:
       print("Le dessier '% s' a crée" % dir_data) 
   except FileExistsError as e:
       print("Erreur dans le temps créer de dessier '% s' avec : "+e % dir_data) 
-      
+
 
   season_fullname = utils.season_full_name(year)
 
