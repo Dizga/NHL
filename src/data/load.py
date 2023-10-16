@@ -8,19 +8,16 @@ from src.data import RequestNHL
 from src import utils
 from src.models import Season
 class NHLDataDownloader:
-    def __init__(self):
+    def __init__(self, year):
         self.nb_playoffs = 105
-        self.season_year = None
-        self.season_fullname = None
+        self.season_year = year
+        self.season_fullname = utils.season_full_name(year) 
         self.r_games = []
         self.p_games = {}
     
     def set_season(self, season_input_value):
         self.season_year = season_input_value
-        self.season_fullname = self.season_full_name(season_input_value) 
-    
-    def season_full_name(self,season: int or str):
-        return season + str(int(season)+1) if type(season) == str else f'{season}{season+1}'   
+        self.season_fullname = utils.season_full_name(season_input_value)
 
     def playoff_code(self,id: int) -> int:
       """
