@@ -12,4 +12,4 @@ but both are still valid. You can read more about packages and modules here:
 https://docs.python.org/3/reference/import.html#regular-packages
 """
 from .request import RequestNHL
-from .load import load_data, load_processed_data, load_df_shots
+from .load import NHLDataDownloader
