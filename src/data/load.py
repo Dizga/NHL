@@ -153,7 +153,7 @@ class NHLDataDownloader:
       if not season:
         if os.path.isfile(filename):
           return pd.read_pickle(filename)
-        season = self.load_processed_data(filename)
+        season = self.load_processed_data()
 
       columns = ['Game_id',
               'Period',
