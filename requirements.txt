@@ -1,3 +1,5 @@
+comet_ml
+load_dotenv
 numpy
 pandas
 pydantic
