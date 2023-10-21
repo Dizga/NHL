@@ -129,8 +129,9 @@ class NHLDataDownloader:
 
           samples (bool): if true, only a small portion of the data is downloaded, default false.
       """
+      data = self.load_data(filename, samples)
       print('Processing data... (1-2 minutes)')
-      season = Season.model_validate(self.load_data(filename, samples))
+      season = Season.model_validate(data)
       print('Done!')
       return season
 
