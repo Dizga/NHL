@@ -15,9 +15,9 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
       filename (Optional[str]): Path + filename of the file to load or save data into.
   """
 
-  version = 0.2
+  version = 0.12
 
-  filename = filename or f'data/shots_{year}-{version}.pkl'
+  filename = filename or f'data/shots_{year}_{version}.pkl'
 
   if os.path.isfile(filename):
     return pd.read_pickle(filename)
@@ -67,6 +67,9 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
         
   df = pd.DataFrame(data, columns=columns)
 
+  df.Empty_net = df.Empty_net.fillna(False)
+  df.Strength = df.Strength.fillna('Even')
+
   # Get the opponant net position
   df['Avg'] = df.groupby(['Game_id', 'Period', 'Team'])['X'].transform('mean')
   def distance_x_from_net(row):
@@ -78,6 +81,8 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
   df['Net_distance'] = df.apply(lambda row: math.dist([row.X_net, row.Y],[0, 0]), axis=1)
   df['Net_angle'] = df.apply(lambda row: math.degrees(math.atan2(abs(row.Y), row.X_net)), axis=1)
   df.drop('Avg', axis=1, inplace = True)
+
+  df['Year'] = year
 
   df = df.infer_objects()
 
