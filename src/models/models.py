@@ -42,6 +42,7 @@ class PlayDetails(BaseModel):
   dateTime: datetime
   period: int # > 3 overtime
   periodTime: time
+  periodType: str
   periodTimeRemaining: time
   away_goals: int
   home_goals: int
@@ -67,6 +68,8 @@ class PlayResult(BaseModel):
   description: str = ''
   strength: str
   emptyNet: Optional[bool] = None
+  penaltySeverity: str = None
+  penaltyMinutes: int = None
 
   @model_validator(mode='before')
   def extract_results(cls, values):
@@ -88,6 +91,16 @@ class Play(BaseModel):
       if not value:
          return None
       return value
+  
+  @property
+  def game_time(self):
+      period = self.about.period
+      period_time = self.about.periodTime.minute * 60 + self.about.periodTime.second
+
+      if self.about.periodType == 'SHOOTOUT':
+         return 3900
+
+      return (period - 1) * 1200 + period_time
 
   def get_opp_side(self):
     warnings.warn("Sides and position do not necessarily match! Left can mean x<0 or x>0")
@@ -104,6 +117,8 @@ class Game(BaseModel):
     home_team: Optional[Team] = None
     away_team: Optional[Team] = None
     starting_side: Side = None
+    scoring_plays: list[int]
+    penalty_plays: list[int]
 
     @model_validator(mode='before')
     def extract_plays_and_teams(cls, values):
@@ -118,6 +133,8 @@ class Game(BaseModel):
         game_data = values.get('gameData', {})
         teams = game_data.pop('teams', {})
         values['plays'] = plays.get('allPlays', [])
+        values['scoring_plays'] = plays.get('scoringPlays', [])
+        values['penalty_plays'] = plays.get('penaltyPlays', [])
         values['home_team'] = teams.get('home')
         values['away_team'] = teams.get('away')
         return values
@@ -129,17 +146,6 @@ class Game(BaseModel):
 
     def is_home_team(self, team: str):
       return self.home_team.triCode == team
-
-    def to_df(self):
-      columns = ['event idx', 'x', 'y', 'description']
-      df = pd.DataFrame(columns=columns)
-      for play in self.plays:
-        idx = play.about.eventIdx
-        x = play.coordinates.x if play.coordinates else None
-        y = play.coordinates.y if play.coordinates else None
-        description = play.result.description
-        df = pd.concat([df, pd.DataFrame([[idx, x, y, description]], columns=columns)])
-      return df.reset_index(drop=True)
 
 class PlayOffGame(Game):
     round: int
