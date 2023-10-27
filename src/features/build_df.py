@@ -1,5 +1,6 @@
 import math
 import os
+import numpy as np
 import pandas as pd
 
 from src.data.load import NHLDataDownloader
@@ -15,27 +16,32 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
       filename (Optional[str]): Path + filename of the file to load or save data into.
   """
 
-  version = 0.12
+  version = 0.14
+  path = f'data/df/{version}'
+  os.makedirs(path, exist_ok=True)
 
-  filename = filename or f'data/shots_{year}_{version}.pkl'
+  filename = filename or f'{path}/df_{year}_{version}.pkl'
 
   if os.path.isfile(filename):
     return pd.read_pickle(filename)
   
   season = NHLDataDownloader(year).load_processed_data()
 
-  columns = ['Game_id',
-          'Period',
-          'Time',
-          'Team',
-          'Goal',
-          'X',
-          'Y',
-          'Shooter',
-          'Goalie',
-          'Type',
-          'Empty_net',
-          'Strength']
+  columns = [
+    'Game_id',
+    'Game_time',
+    'Period',
+    'Time',
+    'Team',
+    'OppTeam',
+    'Goal',
+    'X',
+    'Y',
+    'Shooter',
+    'Goalie',
+    'Type',
+    'Empty_net',
+    'Strength']
   
   data = []
 
@@ -53,17 +59,19 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
           if player_event.playerType == 'Goalie':
             gardien = player_event.player.fullName
 
+        game_time = play.game_time
         periode = play.about.period
         time = play.about.periodTime.isoformat()[3:]
-        id = game_id + 1
-        equipe = play.team.triCode
+        id = game_id + 1       
+        team = play.team.triCode
+        opp_team = game.away_team.triCode if game.is_home_team(team) else game.home_team.triCode
         but = play.result.event == 'Goal'
         x = play.coordinates.x
         y = play.coordinates.y
         shot_type = play.result.secondaryType
         empty_net = play.result.emptyNet
         strength = play.result.strength
-        data.append([id, periode, time, equipe, but, x, y, tireur, gardien, shot_type, empty_net, strength])
+        data.append([id, game_time, periode, time, team, opp_team, but, x, y, tireur, gardien, shot_type, empty_net, strength])
         
   df = pd.DataFrame(data, columns=columns)
 
@@ -78,10 +86,14 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
       return abs(x_net-x)
 
   df['X_net'] = df.apply(distance_x_from_net, axis=1)
-  df['Net_distance'] = df.apply(lambda row: math.dist([row.X_net, row.Y],[0, 0]), axis=1)
-  df['Net_angle'] = df.apply(lambda row: math.degrees(math.atan2(abs(row.Y), row.X_net)), axis=1)
+  df['Shot_distance'] = df.apply(lambda row: math.dist([row.X_net, row.Y],[0, 0]), axis=1)
   df.drop('Avg', axis=1, inplace = True)
 
+  # Compute shot angle, goes from -90 (on the left) to 90 (on the right).
+  df['Shot_angle'] = df.apply(lambda row: math.degrees(math.atan2(abs(row.Y), row.X_net)), axis=1)
+  sign = np.sign(df.Y) * np.sign(df.X)
+  df['Shot_angle'] *= sign
+  
   df['Year'] = year
 
   df = df.infer_objects()
