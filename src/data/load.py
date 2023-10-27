@@ -6,7 +6,8 @@ import pandas as pd
 
 from src.data import RequestNHL
 from src import utils
-from src.models import Season
+from src.data.models import Season
+
 class NHLDataDownloader:
     def __init__(self, year):
         self.nb_playoffs = 105
