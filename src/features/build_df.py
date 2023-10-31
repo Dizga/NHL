@@ -1,5 +1,6 @@
 import math
 import os
+from src.data.models import Play
 import numpy as np
 import pandas as pd
 
@@ -16,7 +17,7 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
       filename (Optional[str]): Path + filename of the file to load or save data into.
   """
 
-  version = 0.14
+  version = 0.15
   path = f'data/df/{version}'
   os.makedirs(path, exist_ok=True)
 
@@ -29,9 +30,9 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
 
   columns = [
     'Game_id',
-    'Game_time',
+    'Game_time',  # In seconds
     'Period',
-    'Time',
+    'Time',       # Time since the period started mm:ss 
     'Team',
     'OppTeam',
     'Goal',
@@ -41,14 +42,23 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
     'Goalie',
     'Type',
     'Empty_net',
-    'Strength']
+    'Strength',
+    'Previous_event_type',
+    'Previous_x',
+    'Previous_y',
+    'Previous_time_since',
+    'Previous_distance',
+    'Speed',
+    'Is_rebound']
   
   data = []
 
   print("Creating Dataframe...")
   
   for game_id, game in enumerate(season.regulars):
+    last_play = None
     for play in game.plays:
+
       if play.coordinates and (play.result.event == 'Goal' or play.result.event == 'Shot'):
 
         tireur = ""
@@ -66,12 +76,48 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
         team = play.team.triCode
         opp_team = game.away_team.triCode if game.is_home_team(team) else game.home_team.triCode
         but = play.result.event == 'Goal'
-        x = play.coordinates.x
-        y = play.coordinates.y
+        x = play.coordinates.x or 0
+        y = play.coordinates.y or 0
         shot_type = play.result.secondaryType
         empty_net = play.result.emptyNet
         strength = play.result.strength
-        data.append([id, game_time, periode, time, team, opp_team, but, x, y, tireur, gardien, shot_type, empty_net, strength])
+        last_play_event = last_play.result.event
+        if (last_play.coordinates is None):
+          last_play_x = x
+          last_play_y = y
+        else:
+          last_play_x = last_play.coordinates.x or x
+          last_play_y = last_play.coordinates.y or y
+        time_since_last_play = game_time - last_play.game_time
+        last_play_distance = math.dist([x, y],[last_play_x, last_play_y])
+        is_rebound = True if last_play_event == 'Shot' else False
+        delta = time_since_last_play or 1
+        speed = last_play_distance / delta
+    
+        data.append([
+          id,
+          game_time,
+          periode,
+          time,
+          team,
+          opp_team,
+          but,
+          x,
+          y,
+          tireur,
+          gardien,
+          shot_type,
+          empty_net,
+          strength,
+          last_play_event,
+          last_play_x,
+          last_play_y,
+          time_since_last_play,
+          last_play_distance,
+          speed,
+          is_rebound])
+
+      last_play = play
         
   df = pd.DataFrame(data, columns=columns)
 
@@ -93,6 +139,12 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
   df['Shot_angle'] = df.apply(lambda row: math.degrees(math.atan2(abs(row.Y), row.X_net)), axis=1)
   sign = np.sign(df.Y) * np.sign(df.X)
   df['Shot_angle'] *= sign
+
+  # Compute rebound angle
+  prev_angle = df.Shot_angle.shift(1, fill_value=0)
+  df['Rebound_angle'] = abs(prev_angle - df['Shot_angle'])
+  df.loc[~df.Is_rebound, 'Rebound_angle'] = 0
+
   
   df['Year'] = year
 
