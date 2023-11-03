@@ -17,7 +17,7 @@ class Penalty:
 @dataclass
 class PPTeam:
     players: int
-    pp: int
+    start_time: int
 
 @dataclass
 class PPState:
@@ -50,14 +50,14 @@ def get_powerplay_states(game:Game) -> list[PPState]:
 
   def set_powerplay(state: PPState, time):
     if state.teams[home_team].players > state.teams[away_team].players:
-      state.teams[away_team].pp = None
-      state.teams[home_team].pp = state.teams[home_team].pp or time
+      state.teams[away_team].start_time = None
+      state.teams[home_team].start_time = state.teams[home_team].start_time or time
     elif state.teams[home_team].players < state.teams[away_team].players:
-      state.teams[home_team].pp = None
-      state.teams[away_team].pp = state.teams[home_team].pp or time   
+      state.teams[home_team].start_time = None
+      state.teams[away_team].start_time = state.teams[home_team].start_time or time   
     else:
-      state.teams[home_team].pp = None
-      state.teams[away_team].pp = None
+      state.teams[home_team].start_time = None
+      state.teams[away_team].start_time = None
     return state
 
   for play_id in pens_and_goals:
@@ -87,7 +87,7 @@ def get_powerplay_states(game:Game) -> list[PPState]:
 
 
     # End a minor penalty for the other team if a goal was made during powerplay
-    if play.result.event == 'Goal' and state.teams[team].pp is not None:
+    if play.result.event == 'Goal' and state.teams[team].start_time is not None:
       minor_penalty = get_first_minor_penalty(penalties, other_team)
       if minor_penalty:
         if minor_penalty.end_time - current_time < _120_seconds:
@@ -113,4 +113,6 @@ def get_powerplay_states(game:Game) -> list[PPState]:
         states.append(deepcopy(state))
       last_time = penalty.start_time
 
+  states.append(PPState(game.plays[-1].game_time, {home_team:PPTeam(5, None), away_team:PPTeam(5, None)}))
+  
   return states
