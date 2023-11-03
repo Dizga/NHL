@@ -1,13 +1,13 @@
 import math
 import os
-from src.data.models import Play
+from src.features.powerplay import get_powerplay_states
 import numpy as np
 import pandas as pd
 
 from src.data.load import NHLDataDownloader
 
 
-def load_df_shots(year, filename: str = "") -> pd.DataFrame:
+def load_df_shots(year, filename: str = "", save = True) -> pd.DataFrame:
   """
   Load season data and transform to a DataFrame with shots and goals events.
 
@@ -17,7 +17,7 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
       filename (Optional[str]): Path + filename of the file to load or save data into.
   """
 
-  version = 0.15
+  version = 0.16
   path = f'data/df/{version}'
   os.makedirs(path, exist_ok=True)
 
@@ -49,13 +49,22 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
     'Previous_time_since',
     'Previous_distance',
     'Speed',
-    'Is_rebound']
+    'Is_rebound',
+    'Time_since_powp',
+    'Players',
+    'Opp_players']
+  
+  # add column: is_home_team, score so far, player goal ratio runing average, goalie stops ratio running average...
   
   data = []
 
   print("Creating Dataframe...")
   
   for game_id, game in enumerate(season.regulars):
+    if game.plays:
+      powp_states = iter(get_powerplay_states(game))
+      powp = next(powp_states)
+      next_powp = next(powp_states)
     last_play = None
     for play in game.plays:
 
@@ -83,16 +92,24 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
         strength = play.result.strength
         last_play_event = last_play.result.event
         if (last_play.coordinates is None):
-          last_play_x = x
-          last_play_y = y
+          last_play_x = 0
+          last_play_y = 0
         else:
-          last_play_x = last_play.coordinates.x or x
-          last_play_y = last_play.coordinates.y or y
+          last_play_x = last_play.coordinates.x or 0
+          last_play_y = last_play.coordinates.y or 0
         time_since_last_play = game_time - last_play.game_time
         last_play_distance = math.dist([x, y],[last_play_x, last_play_y])
         is_rebound = True if last_play_event == 'Shot' else False
         delta = time_since_last_play or 1
         speed = last_play_distance / delta
+
+        while game_time > next_powp.time:
+          powp = next_powp
+          next_powp = next(powp_states)
+
+        powp_time = game_time - powp.teams[team].start_time if (powp.teams[team].start_time is not None) else 0
+        team_players = powp.teams[team].players
+        opp_team_players = powp.teams[opp_team].players
     
         data.append([
           id,
@@ -115,7 +132,10 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
           time_since_last_play,
           last_play_distance,
           speed,
-          is_rebound])
+          is_rebound,
+          powp_time,
+          team_players,
+          opp_team_players])
 
       last_play = play
         
@@ -150,7 +170,8 @@ def load_df_shots(year, filename: str = "") -> pd.DataFrame:
 
   df = df.infer_objects()
 
-  df.to_pickle(filename)
+  if save:
+    df.to_pickle(filename)
 
   print("Done!")
 
