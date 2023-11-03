@@ -1,6 +1,6 @@
 import math
 import os
-from src.features import get_powerplay_states
+from src.features.powerplay import get_powerplay_states
 import numpy as np
 import pandas as pd
 
