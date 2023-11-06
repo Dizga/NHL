@@ -251,4 +251,6 @@ def play_penalty(season_data):
           }
       all_penalties.append(penalty_details)
       
-  print(all_penalties)
+  #print(all_penalties)
+  return all_penalties
+
