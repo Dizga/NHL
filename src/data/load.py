@@ -218,3 +218,11 @@ class NHLDataDownloader:
       print("Done!")
 
       return df
+    
+def get_seconds(time_str:str)-> int:
+    # Diviser la chaîne de temps
+    minutes, seconds = map(int, time_str.split(":"))
+    # Calculer le temps en secondes
+    total_seconds = minutes * 60 + seconds
+    #print(total_seconds)
+    return total_seconds
