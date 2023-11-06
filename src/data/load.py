@@ -254,3 +254,44 @@ def play_penalty(season_data):
   #print(all_penalties)
   return all_penalties
 
+# Calculer des variables question 4.4
+def get_jeu_puissance(season_data,all_penalties)->list:
+    power_play_active = False  # Indique si un power-play est actif
+    power_play_start_time = 0  # Temps de début du power-play en secondes
+    friendly_skaters_on_ice = 5  # Nombre de patineurs non-gardiens amicaux sur la glace
+    opposing_skaters_on_ice = 5  # Nombre de patineurs non-gardiens adverses sur la glace
+    home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
+    #print(home)
+    away = season_data['regulars'][0]['gameData']['teams']['away']['triCode']
+    #print(away)
+    # Parcourir toutes les pénalités
+    for penalty in all_penalties:
+        penalty_team = penalty['penalty_team']
+        penalty_time = penalty['penalty_time']
+
+        # Vérifier si une nouvelle pénalité a commencé
+        if not power_play_active:
+            power_play_active = True
+            power_play_start_time = penalty_time
+            if penalty_team == home:
+                friendly_skaters_on_ice -= 1
+            else:
+                opposing_skaters_on_ice -= 1
+        else:
+            # Vérifier si la pénalité actuelle a expiré
+            if penalty_time - power_play_start_time >= 120:
+                power_play_active = False
+                power_play_start_time = 0
+                if penalty_team == home:
+                    friendly_skaters_on_ice += 1
+                else:
+                    opposing_skaters_on_ice += 1
+    return {
+            'time_elapsed_power_play': power_play_start_time,
+            'friendly_skaters_on_ice': friendly_skaters_on_ice,
+            'opposing_skaters_on_ice': opposing_skaters_on_ice
+        }
+
+
+
+
