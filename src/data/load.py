@@ -8,6 +8,7 @@ import pandas as pd
 from src.data import RequestNHL
 from src import utils
 from src.data.models import Season
+from src.features.jeu_puissance import get_jeu_puissance,detail_penality
 
 class NHLDataDownloader:
     def __init__(self, year):
@@ -220,11 +221,14 @@ class NHLDataDownloader:
       # Question 4.4 
       # Milstone 2
       # Afficher les caractéristiques
-      all_penalties = detail_penality(df)
-      d = get_jeu_puissance(all_penalties)
+      
+      d = get_jeu_puissance(df)
       print(d['time_elapsed_power_play'])
       print(d['friendly_skaters_on_ice'])
       print(d['opposing_skaters_on_ice'])
+      #df['power_play'] = d['time_elapsed_power_play']
+      #df['friendly_skaters'] = d['friendly_skaters_on_ice']
+      #df['opposing_skaters'] = d['opposing_skaters_on_ice']
 
       print("Done!")
 
