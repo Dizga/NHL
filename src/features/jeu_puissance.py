@@ -39,14 +39,15 @@ def detail_penality(season_data):
         
 # Définition des caractéristiques pour question 4.4
 # Calculez quelques caractéristiques concernant la situation de jeu de puissance (power-play)
-def get_jeu_puissance(season_data:list,all_penalties:list)->list:
+def get_jeu_puissance(season_data:list)->list:
+    all_penalties = detail_penality(season_data)
     power_play_active = False  # Indique si un power-play est actif
     power_play_start_time = 0  # Temps de début du power-play en secondes
     friendly_skaters_on_ice = 5  # Nombre de patineurs non-gardiens amicaux sur la glace
     opposing_skaters_on_ice = 5  # Nombre de patineurs non-gardiens adverses sur la glace
     home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
     #print(home)
-    away = season_data['regulars'][0]['gameData']['teams']['away']['triCode']
+    #away = season_data['regulars'][0]['gameData']['teams']['away']['triCode']
     #print(away)
     # Parcourir toutes les pénalités
     for penalty in all_penalties:
