@@ -4,6 +4,7 @@ import pickle
 import sys
 import pandas as pd
 
+
 from src.data import RequestNHL
 from src import utils
 from src.data.models import Season
@@ -214,6 +215,16 @@ class NHLDataDownloader:
       df = df.infer_objects()
 
       df.to_pickle(filename)
+      
+      # Ajouter le caractéristique de jeu de puissance au DataFrame retourner par load_df_shots
+      # Question 4.4 
+      # Milstone 2
+      # Afficher les caractéristiques
+      all_penalties = detail_penality(df)
+      d = get_jeu_puissance(all_penalties)
+      print(d['time_elapsed_power_play'])
+      print(d['friendly_skaters_on_ice'])
+      print(d['opposing_skaters_on_ice'])
 
       print("Done!")
 
