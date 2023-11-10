@@ -200,7 +200,7 @@ class NHLDataDownloader:
         #home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
         
         get_jeu_puissance(all_penalties_details,game.home_team.triCode)
-        
+
         for play in game.plays:
                                   
           if play.coordinates and (play.result.event == 'Goal' or play.result.event == 'Shot'):
@@ -338,7 +338,7 @@ def get_jeu_puissance(all_penalties:list,all_home:list)->list:
             'friendly_skaters_on_ice': friendly_skaters_on_ice,
             'opposing_skaters_on_ice': opposing_skaters_on_ice
         }
-    print('33333333 ',result)
+    print('find result ',result)
     return result
 # Afficher les caractéristiques
 #d = get_jeu_puissance(all_penalties)
