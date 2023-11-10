@@ -8,7 +8,7 @@ import pandas as pd
 from src.data import RequestNHL
 from src import utils
 from src.data.models import Season
-from src.features.jeu_puissance import get_jeu_puissance,detail_penality
+#from src.features.jeu_puissance import get_jeu_puissance1
 
 class NHLDataDownloader:
     def __init__(self, year):
@@ -62,6 +62,7 @@ class NHLDataDownloader:
       dir_data = 'data'
 
       # Créer le dossier data
+      
       try:
         if not os.path.isdir(dir_data):
           os.mkdir(dir_data)
@@ -155,8 +156,8 @@ class NHLDataDownloader:
       filename = filename or f'data/shots_{self.season_year}-{version}.pkl'
 
       if not season:
-        if os.path.isfile(filename):
-          return pd.read_pickle(filename)
+        #if os.path.isfile(filename):
+          #return pd.read_pickle(filename)
         season = self.load_processed_data()
 
       columns = ['Game_id',
@@ -177,9 +178,33 @@ class NHLDataDownloader:
       print("Creating Dataframe...")
       
       for game_id, game in enumerate(season.regulars):
+        all_penalties = []
+        all_penalties_details = []
+        #for play_penalty in game.penalty_plays:
+        #  #print('play_master ',play_penalty)
+        #  all_penalties.append(play_penalty)
+        penalty_plays = game.penalty_plays
+        for play in penalty_plays:
+           penalty_team = game.plays[play].team.triCode
+           penalty_time = game.plays[play].about.periodTime
+           penalty_period = game.plays[play].about.period
+           penalty_description = game.plays[play].result.description
+           penalty_details = {
+                'penalty_period':penalty_period,
+                'penalty_team':penalty_team,
+                'penalty_time':penalty_time,
+                'penalty_description':penalty_description
+              }
+           all_penalties_details.append(penalty_details) 
+        #print('all_penalties_details ',all_penalties_details)
+        #home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
+        
+        get_jeu_puissance(all_penalties_details,game.home_team.triCode)
+        
         for play in game.plays:
+                                  
           if play.coordinates and (play.result.event == 'Goal' or play.result.event == 'Shot'):
-
+            
             tireur = ""
             gardien = ""
             for player_event in play.players:
@@ -199,7 +224,7 @@ class NHLDataDownloader:
             empty_net = play.result.emptyNet
             strength = play.result.strength
             data.append([id, periode, time, equipe, but, x, y, tireur, gardien, shot_type, empty_net, strength])
-            
+          #print('all_penalties: ',all_penalties)
       df = pd.DataFrame(data, columns=columns)
 
       # Get the opponant net position
@@ -222,10 +247,11 @@ class NHLDataDownloader:
       # Milstone 2
       # Afficher les caractéristiques
       
-      d = get_jeu_puissance(df)
-      print(d['time_elapsed_power_play'])
-      print(d['friendly_skaters_on_ice'])
-      print(d['opposing_skaters_on_ice'])
+      #d = get_jeu_puissance(season)
+      #print('========================== ',df)
+      #print(d['time_elapsed_power_play'])
+      #print(d['friendly_skaters_on_ice'])
+      #print(d['opposing_skaters_on_ice'])
       #df['power_play'] = d['time_elapsed_power_play']
       #df['friendly_skaters'] = d['friendly_skaters_on_ice']
       #df['opposing_skaters'] = d['opposing_skaters_on_ice']
@@ -269,21 +295,25 @@ def play_penalty(season_data):
   #print(all_penalties)
   return all_penalties
 
-# Calculer des variables question 4.4
-def get_jeu_puissance(season_data,all_penalties)->list:
+
+
+def get_jeu_puissance(all_penalties:list,all_home:list)->list:
+    #all_penalties = detail_penality(season_data)
     power_play_active = False  # Indique si un power-play est actif
     power_play_start_time = 0  # Temps de début du power-play en secondes
     friendly_skaters_on_ice = 5  # Nombre de patineurs non-gardiens amicaux sur la glace
     opposing_skaters_on_ice = 5  # Nombre de patineurs non-gardiens adverses sur la glace
-    home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
+    #home = season_data['regulars'][0]['gameData']['teams']['home']['triCode']
+    home = all_home
     #print(home)
-    away = season_data['regulars'][0]['gameData']['teams']['away']['triCode']
+    #away = season_data['regulars'][0]['gameData']['teams']['away']['triCode']
     #print(away)
     # Parcourir toutes les pénalités
     for penalty in all_penalties:
         penalty_team = penalty['penalty_team']
-        penalty_time = penalty['penalty_time']
-
+        penalty_timing = penalty['penalty_time']
+        
+        penalty_time = (penalty_timing.hour * 3600) + (penalty_timing.minute * 60) + penalty_timing.second
         # Vérifier si une nouvelle pénalité a commencé
         if not power_play_active:
             power_play_active = True
@@ -301,12 +331,19 @@ def get_jeu_puissance(season_data,all_penalties)->list:
                     friendly_skaters_on_ice += 1
                 else:
                     opposing_skaters_on_ice += 1
-    return {
+
+    
+    result = {
             'time_elapsed_power_play': power_play_start_time,
             'friendly_skaters_on_ice': friendly_skaters_on_ice,
             'opposing_skaters_on_ice': opposing_skaters_on_ice
         }
-
-
+    print('33333333 ',result)
+    return result
+# Afficher les caractéristiques
+#d = get_jeu_puissance(all_penalties)
+#print(d['time_elapsed_power_play'])
+#print(d['friendly_skaters_on_ice'])
+#print(d['opposing_skaters_on_ice'])
 
 
