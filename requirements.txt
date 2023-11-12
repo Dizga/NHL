@@ -16,3 +16,6 @@ plotly
 pillow
 pprintpp
 scipy
+tensorflow
+tensorflow_decision_forests
+xgboost
