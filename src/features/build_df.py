@@ -7,7 +7,7 @@ import pandas as pd
 from src.data.load import NHLDataDownloader
 
 
-def load_df_shots(year, filename: str = "", save = True) -> pd.DataFrame:
+def load_df_shots(year, playoffs = False, filename: str = "", save = True) -> pd.DataFrame:
   """
   Load season data and transform to a DataFrame with shots and goals events.
 
@@ -21,7 +21,7 @@ def load_df_shots(year, filename: str = "", save = True) -> pd.DataFrame:
   path = f'data/df/{version}'
   os.makedirs(path, exist_ok=True)
 
-  filename = filename or f'{path}/df_{year}_{version}.pkl'
+  filename = filename or f'{path}/df_{year}{"-p" if playoffs else ""}_{version}.pkl'
 
   if os.path.isfile(filename):
     return pd.read_pickle(filename)
@@ -60,7 +60,8 @@ def load_df_shots(year, filename: str = "", save = True) -> pd.DataFrame:
 
   print("Creating Dataframe...")
   
-  for game_id, game in enumerate(season.regulars):
+  games = season.playoffs.values() if playoffs else season.regulars
+  for game_id, game in enumerate(games):
     if game.plays:
       powp_states = iter(get_powerplay_states(game))
       powp = next(powp_states)

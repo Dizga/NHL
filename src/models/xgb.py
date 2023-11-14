@@ -1,14 +1,16 @@
 import os, sys
 
+
+
 sys.path.insert(0, os.getcwd()) 
 from src.client.comet import add_metrics
-from src.client import start_experiment
 from src.visualizations.visualization import plots
+from src.client import start_experiment
 from src.features import load_df_shots, add_goalie_ratio, add_opponent_concedes, add_shooter_ratio, add_team_goals
 import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder, minmax_scale
-import tensorflow_decision_forests as tfdf
-from sklearn.metrics import roc_curve
+from xgboost import XGBClassifier
+from sklearn.metrics import roc_curve, accuracy_score, roc_auc_score, precision_score, recall_score
 from keras import metrics
 
 
@@ -33,11 +35,13 @@ df_tot = df[[
         'Game_id',
         'Game_time',
         'Type',
-        # 'Empty_net',
+        'Empty_net',
         'Previous_distance',
         'Speed',
-        # 'Is_rebound',
+        'Is_rebound',
         'Time_since_powp',
+        # 'Players',
+        # 'Opp_players',
         'Powp',
         'Shot_distance',
         'Shot_angle',
@@ -45,12 +49,8 @@ df_tot = df[[
         'Year',
         'Shooter_ratio',
         'Goalie_ratio',
-        'Team_goals',
-        'Opp_concedes',
         'Previous_event_type',
         'Goal']].copy()
-
-# df['P_diff'] = df.Players - df.Opp_players
 
 enc = OrdinalEncoder()
 
@@ -61,10 +61,8 @@ df_tot.Time_since_powp = minmax_scale(df_tot.Time_since_powp.values)
 df_tot.Shot_distance = minmax_scale(df_tot.Shot_distance.values)
 df_tot.Shooter_ratio = minmax_scale(df_tot.Shooter_ratio.values)
 df_tot.Goalie_ratio = minmax_scale(df_tot.Goalie_ratio.values)
-df_tot.Team_goals = minmax_scale(df_tot.Team_goals.values)
-df_tot.Opp_concedes = minmax_scale(df_tot.Opp_concedes.values)
-df_tot.Shot_angle = minmax_scale(df_tot.Shot_angle.values)
 df_tot.Powp = minmax_scale(df_tot.Powp.values)
+df_tot.Shot_angle = minmax_scale(df_tot.Shot_angle.values)
 df_tot.Rebound_angle = minmax_scale(df_tot.Rebound_angle.values)
 
 df_train = df_tot[df_tot.Year < 2019].drop('Year', axis=1)
@@ -97,54 +95,57 @@ df_test = df_test.merge(type_enc[['Previous_event_type', 'Pe_enc']], how='left',
 df_test = df_test.drop('Previous_event_type', axis=1, errors='ignore')
 df_test.Pe_enc.fillna(df_test.Pe_enc.mean(), inplace=True)
 
-# df_train.Empty_net = df_train.Empty_net.astype(int)
-# df_train.Is_rebound = df_train.Is_rebound.astype(int)
+df_train.Empty_net = df_train.Empty_net.astype(int)
+df_train.Is_rebound = df_train.Is_rebound.astype(int)
 df_train.Goal = df_train.Goal.astype(float)
 
-# df_val.Empty_net = df_val.Empty_net.astype(int)
-# df_val.Is_rebound = df_val.Is_rebound.astype(int)
+df_val.Empty_net = df_val.Empty_net.astype(int)
+df_val.Is_rebound = df_val.Is_rebound.astype(int)
 df_val.Goal = df_val.Goal.astype(float)
 
-# df_test.Empty_net = df_test.Empty_net.astype(int)
-# df_test.Is_rebound = df_test.Is_rebound.astype(int)
+df_test.Empty_net = df_test.Empty_net.astype(int)
+df_test.Is_rebound = df_test.Is_rebound.astype(int)
 df_test.Goal = df_test.Goal.astype(float)
 
 train_labels = df_train.Goal.values.reshape(-1,1)
 val_labels = df_val.Goal.values.reshape(-1,1)
 test_labels = df_test.Goal.values.reshape(-1,1)
 
-pos = df_train.Goal.sum()
-neg = len(df_train) - df_train.Goal.sum()
-tot = len(df_train)
-class_weight = {0: (1 / neg) * (tot/2.0), 1: (1 / pos) * (tot/2.0)}
+X_train = df_train.drop('Goal', axis=1)
+y_train = df_train.Goal
+X_val = df_val.drop('Goal', axis=1)
+y_val = df_val.Goal
+X_test = df_test.drop('Goal', axis=1)
+y_test = df_test.Goal
 
-train_ds = tfdf.keras.pd_dataframe_to_tf_dataset(df_train, label="Goal")
-val_ds = tfdf.keras.pd_dataframe_to_tf_dataset(df_val, label="Goal")
-test_ds = tfdf.keras.pd_dataframe_to_tf_dataset(df_test, label="Goal")
+hypers = {"scale_pos_weight":9, "eta":0.01, "max_depth":5}
 
+bst = XGBClassifier(**hypers)
+# fit model
+bst.fit(X_train, y_train)
+# bst.save_model('model/test.model.json')
+preds = bst.predict(X_val)
+probs = bst.predict_proba(X_val)[:,1]
+
+
+accuracy_score(y_val, preds)
+roc_auc_score(y_val, probs)
+precision_score(y_val, preds)
+recall_score(y_val, preds)
 # exp = start_experiment(workspace='dizga', project_name='test')
 exp = start_experiment()
-exp.set_name(f'tfdf-{exp.get_name()}')
-
-hypers = {"num_trees":400, "max_depth":28}
-
-model = tfdf.keras.RandomForestModel(**hypers)
-model.fit(train_ds, class_weight=class_weight)
-
-predictions = model.predict(val_ds).reshape(-1)
-
-fpr, tpr, _ = roc_curve(val_labels, predictions)
-
-
-mtrcs = ["accuracy", metrics.AUC(), metrics.Precision(), metrics.Recall()]
-model.compile(metrics=mtrcs)
-eval = model.evaluate(val_ds)[1:]
-
-exp.log_curve(f'tfdf-{exp.get_name()}', fpr, tpr)
+exp.set_name(f'xgd-test-{exp.get_name()}')
 exp.log_parameters(hypers)
+add_metrics(
+        exp,
+        accuracy_score(y_val, preds),
+        roc_auc_score(y_val, probs),
+        precision_score(y_val, preds),
+        recall_score(y_val, preds))
 
-add_metrics(exp, eval[0], eval[1], eval[2], eval[3])
+plots(val_labels, probs, f'xgd', exp)
 
-plots(val_labels, predictions, "Decision forest", exp)
+# exp.log_model("test-model", "model/test.model.json")
 
-exp.end()
+
+# exp.log_metrics(mtrs_dir)
