@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.calibration import calibration_curve
+import io
 
-def plots(y_valid, y_prob, model_name):
+def plots(y_valid, y_prob, model_name, exp=None):
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.subplots_adjust(wspace=0.4, hspace=0.6)
     plt.suptitle(f'Performance Evaluation of: {model_name}', fontsize=16)
@@ -68,8 +69,14 @@ def plots(y_valid, y_prob, model_name):
     axes[1,1].set_ylabel('Cumulative Proportion of Goals')
     axes[1,1].set_title('Cumulative Proportion of Goals vs. Centile of Probability')
 
-    # Display the figure with two subplots side by side
-    plt.show()
+    if exp:
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        exp.log_image(buf, name='performance.png')
+        buf.close()
+    else:
+        plt.show()
 
 def ratio_by_percentile(y_true, y_score):
 
