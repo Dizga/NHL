@@ -117,40 +117,42 @@ bst = XGBClassifier(**hypers)
 # bst = XGBClassifier()
 # fit model
 bst.fit(X_train, y_train)
-# bst.save_model('model/test.model.json')
 preds = bst.predict(X_val)
 probs = bst.predict_proba(X_val)[:,1]
-plots(val_labels, probs, f'xgd-all-params')
 
 
-print(f'accuracy: {accuracy_score(y_val, preds)}\nauc: {roc_auc_score(y_val, probs)}\nprecision: {precision_score(y_val, preds)}\nrecall: {recall_score(y_val, preds)}')
+# print(f'accuracy: {accuracy_score(y_val, preds)}\nauc: {roc_auc_score(y_val, probs)}\nprecision: {precision_score(y_val, preds)}\nrecall: {recall_score(y_val, preds)}')
 # print(f'auc: {roc_auc_score(y_val, probs)}')
 # print(f'precision: {precision_score(y_val, preds)}')
 # print(f'recall: {recall_score(y_val, preds)}')
 # exp = start_experiment(workspace='dizga', project_name='test')
-# exp = start_experiment()
-# exp.set_name(f'xgd-all-{exp.get_name()}')
-# exp.log_parameters(hypers)
-# exp.log_dataset_info('columns', df_tot.columns)
-# add_metrics(
-#         exp,
-#         accuracy_score(y_val, preds),
-#         roc_auc_score(y_val, probs),
-#         precision_score(y_val, preds),
-#         recall_score(y_val, preds))
+# bst.save_model('model/xgb.model.json')
+exp = start_experiment()
+exp.set_name(f'xgb-all-{exp.get_name()}')
+exp.log_parameters(hypers)
+exp.log_dataset_info('columns', df_tot.columns)
+exp.add_tags(['XGB', 'All', 'Valid', 'Best'])
+add_metrics(
+        exp,
+        accuracy_score(y_val, preds),
+        roc_auc_score(y_val, probs),
+        precision_score(y_val, preds),
+        recall_score(y_val, preds))
 
-# plots(val_labels, probs, f'xgd-all-params', exp)
+exp.log_model("xgb", "model/xgb.model.json")
+plots(val_labels, probs, 'xgb-all', exp)
+
 # plots(val_labels, probs, f'xgd-all-params')
 
-booster = bst.get_booster()
-importance = booster.get_score(importance_type='weight')
+# booster = bst.get_booster()
+# importance = booster.get_score(importance_type='weight')
 
-# Sorting the feature importances
-sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+# # Sorting the feature importances
+# sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
 
-# Print sorted feature importances
-for feature, score in sorted_importance:
-    print(f'Feature {feature}: Score: {score}')
+# # Print sorted feature importances
+# for feature, score in sorted_importance:
+#     print(f'Feature {feature}: Score: {score}')
 
 # exp.log_model("test-model", "model/test.model.json")
 

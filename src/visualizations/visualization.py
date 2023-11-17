@@ -5,6 +5,13 @@ from sklearn.calibration import calibration_curve
 import io
 
 def plots(y_valid, y_prob, model_name, exp=None):
+
+    if len(y_prob.shape) == 2:
+        if 1 in y_prob.shape:
+            y_prob = y_prob.reshape(-1)
+        else:
+            y_prob = y_prob[:,1]
+
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.subplots_adjust(wspace=0.4, hspace=0.6)
     plt.suptitle(f'Performance Evaluation of: {model_name}', fontsize=16)

@@ -6,3 +6,4 @@ venv/
 activate
 .env
 test.ipynb
+*.csv

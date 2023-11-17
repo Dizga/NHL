@@ -40,14 +40,21 @@ bst.fit(X_train, y_train)
 preds = bst.predict(X_val)
 probs = bst.predict_proba(X_val)[:,1]
 
-accuracy_score(y_val, preds)
-roc_auc_score(y_val, probs)
-precision_score(y_val, preds)
-recall_score(y_val, preds)
+# accuracy_score(y_val, preds)
+# roc_auc_score(y_val, probs)
+# precision_score(y_val, preds)
+# recall_score(y_val, preds)
+
+df = pd.concat([df_2016, df_2017, df_2018, df_2019]).reset_index(drop=True)
+X_train = df[['Shot_distance','Shot_angle']].abs()
+y_train = df.Goal
+
+bst = XGBClassifier()
+bst.fit(X_train, y_train)
+bst.save_model('model/xgb.model.json')
 
 # print(y_val.values)
 
-exp = start_experiment(workspace='dizga', project_name='test')
 exp = start_experiment()
 exp.set_name(f'xgd-distance-angle-{exp.get_name()}')
 add_metrics(
@@ -56,7 +63,8 @@ add_metrics(
         roc_auc_score(y_val, probs),
         precision_score(y_val, preds),
         recall_score(y_val, preds))
-
+exp.log_model("xgb", "model/xgb.model.json")
+exp.add_tags(['XGB', 'Distance', 'Angle'])
 plots(val_labels, probs, f'xgd-distance-angle', exp)
 
 # plots(val_labels, probs, f'xgd-distance')

@@ -1,4 +1,6 @@
 import os, sys
+import pickle
+import numpy as np
 
 import shap
 
@@ -22,7 +24,9 @@ df_2018 = load_df_shots(2018)
 df_2019 = load_df_shots(2019)
 df_2020 = load_df_shots(2020)
 
-df = pd.concat([df_2016, df_2017, df_2018, df_2019, df_2020]).reset_index(drop=True)
+df_po = pd.read_pickle('2020-playoffs.pkl')
+
+df = pd.concat([df_2016, df_2017, df_2018, df_2019, df_po]).reset_index(drop=True)
 
 df = add_shooter_ratio(df)
 df = add_goalie_ratio(df)
@@ -74,8 +78,8 @@ df_tot.Goalie_ratio = minmax_scale(df_tot.Goalie_ratio.values)
 df_tot.Shot_angle = minmax_scale(df_tot.Shot_angle.values)
 df_tot.Rebound_angle = minmax_scale(df_tot.Rebound_angle.values)
 
-df_train = df_tot[df_tot.Year < 2019].drop('Year', axis=1)
-df_val = df_tot[df_tot.Year == 2019].drop('Year', axis=1)
+df_train = df_tot[df_tot.Year < 2020].drop('Year', axis=1)
+df_val = df_tot[df_tot.Year == 2020].drop('Year', axis=1)
 df_test = df_tot[df_tot.Year == 2020].drop('Year', axis=1)
 
 type_enc = df_train.groupby('Type').Goal.mean().reset_index(name='Type_enc')
@@ -135,17 +139,21 @@ bst = XGBClassifier(**hypers)
 bst.fit(X_train, y_train)
 # bst.save_model('model/test.model.json')
 preds = bst.predict(X_val)
-probs = bst.predict_proba(X_val)[:,1]
+probs = bst.predict_proba(X_val)
 
-accuracy_score(y_val, preds)
-roc_auc_score(y_val, probs)
-precision_score(y_val, preds)
-recall_score(y_val, preds)
+y_pred = np.insert(probs, 0, [0,0], axis=0)
+np.savetxt("xgb_select_p.csv", y_pred, delimiter=",")
+
+# bst.save_model('model/xgb.model.json')
+
+
 # exp = start_experiment(workspace='dizga', project_name='test')
+
 # exp = start_experiment()
-# exp.set_name(f'xgd-select-{exp.get_name()}')
+# exp.set_name(f'xgb-{exp.get_name()}')
 # exp.log_parameters(hypers)
 # exp.log_dataset_info('columns', df_tot.columns)
+# exp.add_tags(['XGB', 'Valid', 'Best'])
 # add_metrics(
 #         exp,
 #         accuracy_score(y_val, preds),
@@ -153,31 +161,33 @@ recall_score(y_val, preds)
 #         precision_score(y_val, preds),
 #         recall_score(y_val, preds))
 
-# plots(val_labels, probs, f'xgd-select-params', exp)
-plots(val_labels, probs, f'xgd-select-params')
+# plots(val_labels, probs, f'xgb', exp)
+# exp.log_model("xgb", "model/xgb.model.json")
 
-booster = bst.get_booster()
-importance = booster.get_score(importance_type='weight')
+# plots(val_labels, probs, f'xgd-test-params')
 
-# Sorting the feature importances
-sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+# booster = bst.get_booster()
+# importance = booster.get_score(importance_type='weight')
 
-# Print sorted feature importances
-for feature, score in sorted_importance:
-    print(f'Feature {feature}: Score: {score}')
+# # Sorting the feature importances
+# sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+
+# # Print sorted feature importances
+# for feature, score in sorted_importance:
+#     print(f'Feature {feature}: Score: {score}')
 
 # explainer = shap.Explainer(bst)
 # shap_values = explainer(X_train)
 # shap.plots.bar(shap_values)
 
-print(f'accuracy: {accuracy_score(y_val, preds)}\nauc: {roc_auc_score(y_val, probs)}\nprecision: {precision_score(y_val, preds)}\nrecall: {recall_score(y_val, preds)}')
+# accuracy_score(y_val, preds)
+# roc_auc_score(y_val, probs)
+# precision_score(y_val, preds)
+# recall_score(y_val, preds)
+# print(f'accuracy: {accuracy_score(y_val, preds)}\nauc: {roc_auc_score(y_val, probs)}\nprecision: {precision_score(y_val, preds)}\nrecall: {recall_score(y_val, preds)}')
 
 
 # exp.log_model("test-model", "model/test.model.json")
 
 
 # exp.log_metrics(mtrs_dir)
-
-
-
-columns-Index(['Game_id', 'Game_time','Type', 'Previous_event_type', 'Previous_time_since', 'Previous_distance', 'Speed', 'Time_since_powp', 'Opp_players', 'X_net', 'Shot_distance', 'Shot_angle', 'Rebound_angle', 'Shooter_ratio', 'Goalie_ratio', 'Team_goals', 'Opp_concedes'], dtype='object')
